@@ -3,7 +3,7 @@ app_mvr is a python script to move Synology applications between volumes. The sc
 
 Why did I make this script when there's only five lines of code to begin with? Because I needed to move all of the applications on /volume1 and I'm "lazy" and didn't feel like typing the same five lines for all of the applications on the volume (hence my --all option.)
 
-To install just upload the script to somewhere on the synology and run `sudo python /path/to/app_mvr.py <args>`.
+To run just upload the script somewhere on the synology and run `sudo python /path/to/app_mvr.py <args>`.
 
 	Usage: sudo python app_mvr.py --app TextEditor --from /volume1 --to /volume2
 		--app	<APP>	The apps name found in the @appstore directory.
