@@ -7,6 +7,17 @@ import subprocess
 from sys import argv
 
 
+package_start_stop = "/var/packages/{0}/scripts/start-stop-status"
+
+app_link_mapping = {
+    "@appstore": "target",
+    "@appconf": "etc",
+    "@appdata": "var",
+    "@apphome": "home",
+    "@apptemp": "tmp",
+}
+
+
 def help():
     print("")
     print("app_mvr help:")
@@ -19,33 +30,48 @@ def help():
     print("")
     exit(0)
 
+
 def switch(item):
     index = argv.index(item) + 1
-    return(argv[index])
+    return argv[index]
+
 
 def termy(cmd):
     task = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return(task.communicate())
+    return task.communicate()
 
-def move_app(app, src_volume, dst_volume):
-    src = os.path.join(src_volume, "@appstore", app)
-    dst = os.path.join(dst_volume, "@appstore", app)
-    
-    # create new @appstore dir if it doesn't exist
-    dst_store = os.path.join(dst_volume, "@appstore")
+
+def move_app(app, source, destination):
+    for dir_name, target in app_link_mapping.items():
+        relink_app(app, dir_name, target, source, destination)
+
+
+def relink_app(app, dir_name, target, source, destination):
+
+    src = os.path.join(source, dir_name, app)
+    dst = os.path.join(destination, dir_name, app)
+    target_path = "/var/packages/{app}/{target}".format(app=app, target=target)
+
+    print("moving {} from {} to {}".format(app, src, dst))
+    if not os.path.exists(src):
+        print(src, "does not exists. Skipping.")
+        return
+
+    # create new dir_name (@appstore and such) dir if it doesn't exist
+    dst_store = os.path.join(destination, dir_name)
     if not os.path.isdir(dst_store):
         os.makedirs(dst_store)
     
     # stop the app
-    termy(["/var/packages/{0}/scripts/start-stop-status".format(app), "stop"])
+    termy([package_start_stop.format(app), "stop"])
     # move the app
     shutil.move(src, dst)
     # remove the app target
-    os.unlink("/var/packages/{0}/target".format(app))
+    os.unlink(target_path)
     # create a new symlink
-    termy(["/bin/ln", "-s", dst, "/var/packages/{0}/target".format(app)])
+    termy(["/bin/ln", "-s", dst, target_path])
     # start the app
-    termy(["/var/packages/{0}/scripts/start-stop-status".format(app), "start"])
+    termy([package_start_stop.format(app), "start"])
 
 
 # verify sudo/root is used
