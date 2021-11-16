@@ -26,7 +26,7 @@ def help():
     print("app_mvr help:")
     print("app_mvr must be run as root/sudo.")
     print("Usage: sudo app_mvr.py --app TextEditor --from /volume1 --to /volume2")
-    print("\t--dry-run\t\tRun a test without actually moving anything.")
+    print("\t--dry-run\tRun a test without actually moving anything.")
     print("\t--app\t<APP>\tThe apps name found in the @appstore directory.")
     print("\t--all\t\tAlternative to --app. Moves all applications on the source volume.")
     print("\t--from\t<VOL>\tThe volume the app is currently installed on.")
@@ -46,22 +46,26 @@ def termy(cmd):
 
 
 def move_app(app, source, destination):
+
+    if "--dry-run" in argv:
+        print("Moving {}".format(app))
+
     for dir_name, target in app_link_mapping.items():
-        relink_app(app, dir_name, target, source, destination)
+        src = os.path.join(source, dir_name, app)
+        dst = os.path.join(destination, dir_name, app)
+        target_path = "/var/packages/{app}/{target}".format(app=app, target=target)
+        relink_app(app, dir_name, target_path, src, dst)
+
+    print("------Done moving {}-----".format(app))
 
 
-def relink_app(app, dir_name, target, source, destination):
-
-    src = os.path.join(source, dir_name, app)
-    dst = os.path.join(destination, dir_name, app)
-    target_path = "/var/packages/{app}/{target}".format(app=app, target=target)
+def relink_app(app, dir_name, target_path, src, dst):
 
     if not os.path.exists(src):
         print(src, "does not exists. Skipping.")
         return
 
     if "--dry-run" in argv:
-        print("Found {}".format(app))
         print("Stopping", [package_start_stop.format(app), "stop"])
         print("moving from {} to {}".format(src, dst))
         print("Unlink {}".format(target_path))
@@ -70,7 +74,7 @@ def relink_app(app, dir_name, target, source, destination):
         return
 
     # # create new dir_name (@appstore and such) dir if it doesn't exist
-    # dst_store = os.path.join(destination, dir_name)
+    # dst_store = os.path.join(dst, dir_name)
     # if not os.path.isdir(dst_store):
     #     os.makedirs(dst_store)
     #
