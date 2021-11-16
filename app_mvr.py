@@ -49,45 +49,50 @@ def move_app(app, source, destination):
 
     if "--dry-run" in argv:
         print("Moving {}".format(app))
+        print("Stopping", [package_start_stop.format(app), "stop"])
+    else:
+        # stop the app
+        termy([package_start_stop.format(app), "stop"])
 
     for dir_name, target in app_link_mapping.items():
         src = os.path.join(source, dir_name, app)
         dst = os.path.join(destination, dir_name, app)
         target_path = "/var/packages/{app}/{target}".format(app=app, target=target)
+
         relink_app(app, dir_name, target_path, src, dst)
+
+    if "--dry-run" in argv:
+        print("Starting", [package_start_stop.format(app), "start"])
+    else:
+        # start the app
+        termy([package_start_stop.format(app), "start"])
 
     print("------Done moving {}-----".format(app))
 
 
 def relink_app(app, dir_name, target_path, src, dst):
-
+    print(app, dir_name)
     if not os.path.exists(src):
         print(src, "does not exists. Skipping.")
         return
 
+    # create new dir_name (@appstore and such) dir if it doesn't exist
+    dst_store = os.path.join(dst, dir_name)
+    if not os.path.isdir(dst_store):
+        print("Creating {}".format(dst_store))
+        os.makedirs(dst_store)
+
     if "--dry-run" in argv:
-        print("Stopping", [package_start_stop.format(app), "stop"])
         print("moving from {} to {}".format(src, dst))
         print("Unlink {}".format(target_path))
         print("Create new symlink", "/bin/ln -s {} {}".format(dst, target_path))
-        print("Starting", [package_start_stop.format(app), "start"])
-        return
-
-    # # create new dir_name (@appstore and such) dir if it doesn't exist
-    # dst_store = os.path.join(dst, dir_name)
-    # if not os.path.isdir(dst_store):
-    #     os.makedirs(dst_store)
-    #
-    # # stop the app
-    # termy([package_start_stop.format(app), "stop"])
-    # # move the app
-    # shutil.move(src, dst)
-    # # remove the app target
-    # os.unlink(target_path)
-    # # create a new symlink
-    # termy(["/bin/ln", "-s", dst, target_path])
-    # # start the app
-    # termy([package_start_stop.format(app), "start"])
+    else:
+        # move the app
+        shutil.move(src, dst)
+        # remove the app target
+        os.unlink(target_path)
+        # create a new symlink
+        termy(["/bin/ln", "-s", dst, target_path])
 
 
 # verify sudo/root is used
