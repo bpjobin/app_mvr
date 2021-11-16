@@ -55,6 +55,12 @@ def move_app(app, source, destination):
         termy([package_start_stop.format(app), "stop"])
 
     for dir_name, target in app_link_mapping.items():
+        # create new dir_name (@appstore and such) dir if it doesn't exist
+        dst_store = os.path.join(destination, dir_name)
+        if not os.path.isdir(dst_store):
+            print("Creating {}".format(dst_store))
+            os.makedirs(dst_store)
+
         src = os.path.join(source, dir_name, app)
         dst = os.path.join(destination, dir_name, app)
         target_path = "/var/packages/{app}/{target}".format(app=app, target=target)
@@ -75,12 +81,6 @@ def relink_app(app, dir_name, target_path, src, dst):
     if not os.path.exists(src):
         print(src, "does not exists. Skipping.")
         return
-
-    # create new dir_name (@appstore and such) dir if it doesn't exist
-    dst_store = os.path.join(dst, dir_name)
-    if not os.path.isdir(dst_store):
-        print("Creating {}".format(dst_store))
-        os.makedirs(dst_store)
 
     if "--dry-run" in argv:
         print("moving from {} to {}".format(src, dst))
