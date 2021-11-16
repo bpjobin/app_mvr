@@ -7,6 +7,9 @@ import subprocess
 from sys import argv
 
 
+src_volume = None
+dst_volume = None
+app = None
 package_start_stop = "/var/packages/{0}/scripts/start-stop-status"
 
 app_link_mapping = {
@@ -23,6 +26,7 @@ def help():
     print("app_mvr help:")
     print("app_mvr must be run as root/sudo.")
     print("Usage: sudo app_mvr.py --app TextEditor --from /volume1 --to /volume2")
+    print("\t--dry-run\t\tRun a test without actually moving anything.")
     print("\t--app\t<APP>\tThe apps name found in the @appstore directory.")
     print("\t--all\t\tAlternative to --app. Moves all applications on the source volume.")
     print("\t--from\t<VOL>\tThe volume the app is currently installed on.")
@@ -52,26 +56,34 @@ def relink_app(app, dir_name, target, source, destination):
     dst = os.path.join(destination, dir_name, app)
     target_path = "/var/packages/{app}/{target}".format(app=app, target=target)
 
-    print("moving {} from {} to {}".format(app, src, dst))
     if not os.path.exists(src):
         print(src, "does not exists. Skipping.")
         return
 
-    # create new dir_name (@appstore and such) dir if it doesn't exist
-    dst_store = os.path.join(destination, dir_name)
-    if not os.path.isdir(dst_store):
-        os.makedirs(dst_store)
-    
-    # stop the app
-    termy([package_start_stop.format(app), "stop"])
-    # move the app
-    shutil.move(src, dst)
-    # remove the app target
-    os.unlink(target_path)
-    # create a new symlink
-    termy(["/bin/ln", "-s", dst, target_path])
-    # start the app
-    termy([package_start_stop.format(app), "start"])
+    if "--dry-run" in argv:
+        print("Found {}".format(app))
+        print("Stopping", [package_start_stop.format(app), "stop"])
+        print("moving from {} to {}".format(src, dst))
+        print("Unlink {}".format(target_path))
+        print("Create new symlink", "/bin/ln -s {} {}".format(dst, target_path))
+        print("Starting", [package_start_stop.format(app), "start"])
+        return
+
+    # # create new dir_name (@appstore and such) dir if it doesn't exist
+    # dst_store = os.path.join(destination, dir_name)
+    # if not os.path.isdir(dst_store):
+    #     os.makedirs(dst_store)
+    #
+    # # stop the app
+    # termy([package_start_stop.format(app), "stop"])
+    # # move the app
+    # shutil.move(src, dst)
+    # # remove the app target
+    # os.unlink(target_path)
+    # # create a new symlink
+    # termy(["/bin/ln", "-s", dst, target_path])
+    # # start the app
+    # termy([package_start_stop.format(app), "start"])
 
 
 # verify sudo/root is used
@@ -90,21 +102,21 @@ if "--app" in argv:
 elif "--all" in argv:
     pass
 else:
-    print("Improper syntax, exiting...") # sub with help()
+    print("Improper syntax, exiting...")  # sub with help()
     exit(1)
 
 # get the source volume
 if "--from" in argv:
     src_volume = switch('--from')
 else:
-    print("Improper syntax, exiting...") # sub with help()
+    print("Improper syntax, exiting...")  # sub with help()
     exit(1)
 
 # get the destination volume
 if "--to" in argv:
     dst_volume = switch('--to')
 else:
-    print("Improper syntax, exiting...") # sub with help()
+    print("Improper syntax, exiting...")  # sub with help()
     exit(1)
 
 # move all apps from a volume
